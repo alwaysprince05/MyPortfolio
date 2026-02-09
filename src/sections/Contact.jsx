@@ -109,22 +109,25 @@ const Contact = () => {
     }
 
     try {
-      const res = await fetch(
-        `https://formsubmit.co/ajax/${encodeURIComponent(profile.email)}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            message: formData.message,
-            _subject: `Contact from ${formData.name}`,
-          }),
-        }
-      );
+      // Use FormSubmit hash if provided, otherwise use email
+      const formsubmitEndpoint = profile.formsubmitHash 
+        ? `https://formsubmit.co/ajax/${profile.formsubmitHash}`
+        : `https://formsubmit.co/ajax/${encodeURIComponent(profile.email)}`;
+      
+      const res = await fetch(formsubmitEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          _subject: `Contact from ${formData.name}`,
+          _captcha: false,
+        }),
+      });
       const data = await res.json().catch(() => ({}));
       setIsLoading(false);
       if (res.ok) {

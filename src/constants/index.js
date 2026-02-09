@@ -12,6 +12,8 @@ export const profile = {
   techStack: "Full Stack Developer & Data Science enthusiast. I specialize in web development (React, JavaScript, Node.js), machine learning (Python, scikit-learn), data analysis (SQL, Power BI), and building intelligent applications.",
   // Formspree: messages go straight to your Gmail. Get your form ID at https://formspree.io/
   formspreeFormId: "",
+  // FormSubmit: Use hash for privacy (get from FormSubmit activation email) or leave empty to use email
+  formsubmitHash: "2b1ccc5b6c65477cda7a8e5f7c390825",
   // Or use EmailJS (see EMAIL_SETUP.md): emailjsServiceId, emailjsTemplateId, emailjsPublicKey
   emailjsServiceId: "your_service_id",
   emailjsTemplateId: "your_template_id",
