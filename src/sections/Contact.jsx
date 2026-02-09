@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import emailjs from "@emailjs/browser";
 import Alert from "../components/Alert";
 import { Particles } from "../components/Particles";
@@ -14,9 +14,7 @@ const Contact = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertType, setAlertType] = useState("success");
   const [alertMessage, setAlertMessage] = useState("");
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+
   const showAlertMessage = (type, message) => {
     setAlertType(type);
     setAlertMessage(message);
@@ -24,6 +22,20 @@ const Contact = () => {
     setTimeout(() => {
       setShowAlert(false);
     }, 5000);
+  };
+
+  // Check for success parameter from FormSubmit redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("success") === "true") {
+      showAlertMessage("success", "Message sent! I'll get it in my Gmail.");
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
   const isFormspreeConfigured = () => {
     const id = profile.formspreeFormId;
@@ -48,17 +60,11 @@ const Contact = () => {
 
   const handleSubmit = async (e) => {
     // FormSubmit requires traditional form submission for activation
-    // Don't prevent default if only FormSubmit is configured
+    // Don't prevent default if only FormSubmit is configured - let browser handle it
     if (isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured()) {
-      // Let the form submit naturally - action is set in JSX
-      setIsLoading(true);
-      // Show success message and reset form after a short delay
-      setTimeout(() => {
-        setIsLoading(false);
-        setFormData({ name: "", email: "", message: "" });
-        showAlertMessage("success", "Message sent! I'll get it in my Gmail.");
-      }, 1500);
-      return; // Don't prevent default - let form submit naturally
+      // Don't prevent default - let form submit naturally to FormSubmit
+      // FormSubmit will redirect back via _next parameter
+      return; // Let browser handle form submission
     }
 
     // For AJAX submissions, prevent default
@@ -172,10 +178,6 @@ const Contact = () => {
         refresh
       />
       {showAlert && <Alert type={alertType} text={alertMessage} />}
-      {/* Hidden iframe for FormSubmit submission */}
-      {isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() && (
-        <iframe name="formsubmit_iframe" style={{ display: 'none' }} title="FormSubmit" />
-      )}
       <div className="flex flex-col items-center justify-center w-full max-w-lg sm:max-w-xl p-5 sm:p-6 mx-auto border border-white/10 rounded-xl bg-primary shadow-lg">
         <form 
           className="w-full space-y-5" 
@@ -186,13 +188,10 @@ const Contact = () => {
           method={isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() 
             ? "POST" 
             : undefined}
-          target={isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() 
-            ? "formsubmit_iframe" 
-            : undefined}
         >
           {isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() && (
             <>
-              <input type="hidden" name="_next" value={window.location.href} />
+              <input type="hidden" name="_next" value={`${window.location.origin}${window.location.pathname}?success=true`} />
               <input type="hidden" name="_captcha" value="false" />
               <input type="hidden" name="_subject" value="Contact Form Submission" />
             </>
