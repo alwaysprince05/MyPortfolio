@@ -1,25 +1,27 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-function Navigation() {
+import { profile } from "../constants";
+
+function Navigation({ onLinkClick }) {
   return (
     <ul className="nav-ul">
       <li className="nav-li">
-        <a className="nav-link" href="#home">
+        <a className="nav-link" href="#home" onClick={onLinkClick}>
           Home
         </a>
       </li>
       <li className="nav-li">
-        <a className="nav-link" href="#about">
+        <a className="nav-link" href="#about" onClick={onLinkClick}>
           About
         </a>
       </li>
       <li className="nav-li">
-        <a className="nav-link" href="#work">
+        <a className="nav-link" href="#work" onClick={onLinkClick}>
           Work
         </a>
       </li>
       <li className="nav-li">
-        <a className="nav-link" href="#contact">
+        <a className="nav-link" href="#contact" onClick={onLinkClick}>
           Contact
         </a>
       </li>
@@ -33,10 +35,10 @@ const Navbar = () => {
       <div className="mx-auto c-space max-w-7xl">
         <div className="flex items-center justify-between py-2 sm:py-0">
           <a
-            href="/"
+            href="#home"
             className="text-xl font-bold transition-colors text-neutral-400 hover:text-white"
           >
-            Ali
+            {profile.firstName}
           </a>
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -62,7 +64,7 @@ const Navbar = () => {
           transition={{ duration: 1 }}
         >
           <nav className="pb-5">
-            <Navigation />
+            <Navigation onLinkClick={() => setIsOpen(false)} />
           </nav>
         </motion.div>
       )}

@@ -2,6 +2,8 @@ import { useState } from "react";
 import emailjs from "@emailjs/browser";
 import Alert from "../components/Alert";
 import { Particles } from "../components/Particles";
+import { profile } from "../constants";
+
 const Contact = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -23,35 +25,125 @@ const Contact = () => {
       setShowAlert(false);
     }, 5000);
   };
+  const isFormspreeConfigured = () => {
+    const id = profile.formspreeFormId;
+    return id && typeof id === "string" && id.trim() !== "";
+  };
+
+  const isEmailJSConfigured = () => {
+    const { emailjsServiceId, emailjsTemplateId, emailjsPublicKey } = profile;
+    return (
+      emailjsServiceId &&
+      emailjsTemplateId &&
+      emailjsPublicKey &&
+      emailjsServiceId !== "your_service_id" &&
+      emailjsTemplateId !== "your_template_id" &&
+      emailjsPublicKey !== "your_public_key"
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
+    if (isFormspreeConfigured()) {
+      try {
+        const res = await fetch(`https://formspree.io/f/${profile.formspreeFormId.trim()}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+            _replyto: formData.email,
+          }),
+        });
+        setIsLoading(false);
+        if (res.ok) {
+          setFormData({ name: "", email: "", message: "" });
+          showAlertMessage("success", "Message sent! I'll get it in my Gmail.");
+        } else {
+          const data = await res.json().catch(() => ({}));
+          showAlertMessage(
+            "danger",
+            data.error || "Something went wrong. Try emailing me at " + profile.email
+          );
+        }
+      } catch (err) {
+        setIsLoading(false);
+        console.error(err);
+        showAlertMessage(
+          "danger",
+          "Network error. Try emailing me at " + profile.email
+        );
+      }
+      return;
+    }
+
+    if (isEmailJSConfigured()) {
+      try {
+        await emailjs.send(
+          profile.emailjsServiceId,
+          profile.emailjsTemplateId,
+          {
+            from_name: formData.name,
+            to_name: profile.name,
+            from_email: formData.email,
+            to_email: profile.email,
+            message: formData.message,
+          },
+          profile.emailjsPublicKey
+        );
+        setIsLoading(false);
+        setFormData({ name: "", email: "", message: "" });
+        showAlertMessage("success", "Your message has been sent!");
+      } catch (error) {
+        setIsLoading(false);
+        console.error(error);
+        showAlertMessage(
+          "danger",
+          "Something went wrong. Please try again."
+        );
+      }
+      return;
+    }
+
     try {
-      console.log("From submitted:", formData);
-      await emailjs.send(
-        "service_79b0nyj",
-        "template_17us8im",
+      const res = await fetch(
+        `https://formsubmit.co/ajax/${encodeURIComponent(profile.email)}`,
         {
-          from_name: formData.name,
-          to_name: "Ali",
-          from_email: formData.email,
-          to_email: "AliSanatiDev@gmail.com",
-          message: formData.message,
-        },
-        "pn-Bw_mS1_QQdofuV"
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+            _subject: `Contact from ${formData.name}`,
+          }),
+        }
       );
+      const data = await res.json().catch(() => ({}));
       setIsLoading(false);
-      setFormData({ name: "", email: "", message: "" });
-      showAlertMessage("success", "You message has been sent!");
-    } catch (error) {
+      if (res.ok) {
+        setFormData({ name: "", email: "", message: "" });
+        showAlertMessage("success", "Message sent! I'll get it in my Gmail.");
+      } else {
+        showAlertMessage(
+          "danger",
+          "Something went wrong. Please try again."
+        );
+      }
+    } catch (err) {
       setIsLoading(false);
-      console.log(error);
-      showAlertMessage("danger", "Somthing went wrong!");
+      console.error(err);
+      showAlertMessage("danger", "Something went wrong. Please try again.");
     }
   };
   return (
-    <section className="relative flex items-center c-space section-spacing">
+    <section id="contact" className="relative flex items-center c-space section-spacing">
       <Particles
         className="absolute inset-0 -z-50"
         quantity={100}
@@ -60,59 +152,51 @@ const Contact = () => {
         refresh
       />
       {showAlert && <Alert type={alertType} text={alertMessage} />}
-      <div className="flex flex-col items-center justify-center max-w-md p-5 mx-auto border border-white/10 rounded-2xl bg-primary">
-        <div className="flex flex-col items-start w-full gap-5 mb-10">
-          <h2 className="text-heading">Let's Talk</h2>
-          <p className="font-normal text-neutral-400">
-            Whether you're loking to build a new website, improve your existing
-            platform, or bring a unique project to life, I'm here to help
-          </p>
-        </div>
-        <form className="w-full" onSubmit={handleSubmit}>
-          <div className="mb-5">
-            <label htmlFor="name" className="feild-label">
+      <div className="flex flex-col items-center justify-center w-full max-w-lg sm:max-w-xl p-5 sm:p-6 mx-auto border border-white/10 rounded-xl bg-primary shadow-lg">
+        <form className="w-full space-y-5" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="name" className="field-label block text-neutral-300 font-medium mb-1.5 text-sm">
               Full Name
             </label>
             <input
               id="name"
               name="name"
               type="text"
-              className="field-input field-input-focus"
-              placeholder="John Doe"
+              className="field-input field-input-focus w-full rounded-lg px-3 py-2.5 text-sm text-white bg-white/5 border border-white/10 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-aqua/50 focus:border-aqua/30 transition"
+              placeholder="Your name"
               autoComplete="name"
               value={formData.name}
               onChange={handleChange}
               required
             />
           </div>
-          <div className="mb-5">
-            <label htmlFor="email" className="feild-label">
+          <div>
+            <label htmlFor="email" className="field-label block text-neutral-300 font-medium mb-1.5 text-sm">
               Email
             </label>
             <input
               id="email"
               name="email"
               type="email"
-              className="field-input field-input-focus"
-              placeholder="JohnDoe@email.com"
+              className="field-input field-input-focus w-full rounded-lg px-3 py-2.5 text-sm text-white bg-white/5 border border-white/10 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-aqua/50 focus:border-aqua/30 transition"
+              placeholder="your@email.com"
               autoComplete="email"
               value={formData.email}
               onChange={handleChange}
               required
             />
           </div>
-          <div className="mb-5">
-            <label htmlFor="message" className="feild-label">
+          <div>
+            <label htmlFor="message" className="field-label block text-neutral-300 font-medium mb-1.5 text-sm">
               Message
             </label>
             <textarea
               id="message"
               name="message"
-              type="text"
               rows="4"
-              className="field-input field-input-focus"
-              placeholder="Share your thoughts..."
-              autoComplete="message"
+              className="field-input field-input-focus w-full rounded-lg px-3 py-2.5 text-sm text-white bg-white/5 border border-white/10 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-aqua/50 focus:border-aqua/30 transition resize-none"
+              placeholder="Your message..."
+              autoComplete="off"
               value={formData.message}
               onChange={handleChange}
               required
@@ -120,7 +204,7 @@ const Contact = () => {
           </div>
           <button
             type="submit"
-            className="w-full px-1 py-3 text-lg text-center rounded-md cursor-pointer bg-radial from-lavender to-royal hover-animation"
+            className="w-full py-3 px-4 text-sm font-medium text-white rounded-lg bg-gradient-to-r from-lavender to-royal hover:opacity-90 transition shadow-md"
           >
             {!isLoading ? "Send" : "Sending..."}
           </button>
