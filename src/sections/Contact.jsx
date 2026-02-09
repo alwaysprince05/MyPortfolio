@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import emailjs from "@emailjs/browser";
 import Alert from "../components/Alert";
 import { Particles } from "../components/Particles";
 import { profile } from "../constants";
 
 const Contact = () => {
+  const formRef = useRef(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -58,15 +59,18 @@ const Contact = () => {
     return profile.formsubmitHash && profile.formsubmitHash.trim() !== "";
   };
 
-  const handleSubmit = async (e) => {
-    // FormSubmit requires traditional form submission for activation
-    // Don't prevent default if only FormSubmit is configured - let browser handle it
+  const handleFormSubmitClick = (e) => {
+    // For FormSubmit, submit form programmatically to bypass React
     if (isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured()) {
-      // Don't prevent default - let form submit naturally to FormSubmit
-      // FormSubmit will redirect back via _next parameter
-      return; // Let browser handle form submission
+      e.preventDefault();
+      if (formRef.current) {
+        formRef.current.submit();
+      }
+      return;
     }
+  };
 
+  const handleSubmit = async (e) => {
     // For AJAX submissions, prevent default
     e.preventDefault();
     setIsLoading(true);
@@ -180,6 +184,7 @@ const Contact = () => {
       {showAlert && <Alert type={alertType} text={alertMessage} />}
       <div className="flex flex-col items-center justify-center w-full max-w-lg sm:max-w-xl p-5 sm:p-6 mx-auto border border-white/10 rounded-xl bg-primary shadow-lg">
         <form 
+          ref={formRef}
           className="w-full space-y-5" 
           onSubmit={handleSubmit}
           action={isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() 
@@ -246,6 +251,7 @@ const Contact = () => {
           </div>
           <button
             type="submit"
+            onClick={handleFormSubmitClick}
             className="w-full py-3 px-4 text-sm font-medium text-white rounded-lg bg-gradient-to-r from-lavender to-royal hover:opacity-90 transition shadow-md"
           >
             {!isLoading ? "Send" : "Sending..."}
