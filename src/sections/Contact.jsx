@@ -42,9 +42,56 @@ const Contact = () => {
     );
   };
 
+  const isFormSubmitConfigured = () => {
+    return profile.formsubmitHash && profile.formsubmitHash.trim() !== "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // FormSubmit requires traditional form submission for activation
+    if (isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured()) {
+      // Use traditional form submission with hidden iframe to avoid page reload
+      const form = e.target;
+      const formsubmitAction = `https://formsubmit.co/${profile.formsubmitHash}`;
+      
+      // Create hidden iframe for FormSubmit redirect
+      const iframe = document.createElement('iframe');
+      iframe.name = 'hidden_iframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      // Set form attributes for FormSubmit
+      form.action = formsubmitAction;
+      form.method = 'POST';
+      form.target = 'hidden_iframe';
+      
+      // Add FormSubmit redirect parameter
+      const redirectInput = document.createElement('input');
+      redirectInput.type = 'hidden';
+      redirectInput.name = '_next';
+      redirectInput.value = window.location.href;
+      form.appendChild(redirectInput);
+      
+      // Submit form
+      form.submit();
+      
+      // Show success message after a short delay
+      setTimeout(() => {
+        setIsLoading(false);
+        setFormData({ name: "", email: "", message: "" });
+        showAlertMessage("success", "Message sent! I'll get it in my Gmail.");
+        // Clean up
+        form.removeAttribute('action');
+        form.removeAttribute('method');
+        form.removeAttribute('target');
+        redirectInput.remove();
+        iframe.remove();
+      }, 1000);
+      
+      return;
+    }
 
     if (isFormspreeConfigured()) {
       try {
@@ -108,11 +155,9 @@ const Contact = () => {
       return;
     }
 
+    // Fallback to FormSubmit with email (if no hash configured)
     try {
-      // Use FormSubmit hash if provided, otherwise use email
-      const formsubmitEndpoint = profile.formsubmitHash 
-        ? `https://formsubmit.co/ajax/${profile.formsubmitHash}`
-        : `https://formsubmit.co/ajax/${encodeURIComponent(profile.email)}`;
+      const formsubmitEndpoint = `https://formsubmit.co/ajax/${encodeURIComponent(profile.email)}`;
       
       const res = await fetch(formsubmitEndpoint, {
         method: "POST",
