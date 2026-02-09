@@ -2,6 +2,8 @@
 
 A modern portfolio built with React, Vite, Tailwind CSS, and motion effects. Showcases my projects, experience, and contact form.
 
+**Live Demo:** [MyPortfolio](https://my-portfolio-klxq.vercel.app/#work)
+
 ---
 
 ## About Me
