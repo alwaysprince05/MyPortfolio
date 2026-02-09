@@ -47,51 +47,23 @@ const Contact = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
     // FormSubmit requires traditional form submission for activation
+    // Don't prevent default if only FormSubmit is configured
     if (isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured()) {
-      // Use traditional form submission with hidden iframe to avoid page reload
-      const form = e.target;
-      const formsubmitAction = `https://formsubmit.co/${profile.formsubmitHash}`;
-      
-      // Create hidden iframe for FormSubmit redirect
-      const iframe = document.createElement('iframe');
-      iframe.name = 'hidden_iframe';
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-      
-      // Set form attributes for FormSubmit
-      form.action = formsubmitAction;
-      form.method = 'POST';
-      form.target = 'hidden_iframe';
-      
-      // Add FormSubmit redirect parameter
-      const redirectInput = document.createElement('input');
-      redirectInput.type = 'hidden';
-      redirectInput.name = '_next';
-      redirectInput.value = window.location.href;
-      form.appendChild(redirectInput);
-      
-      // Submit form
-      form.submit();
-      
-      // Show success message after a short delay
+      // Let the form submit naturally - action is set in JSX
+      setIsLoading(true);
+      // Show success message and reset form after a short delay
       setTimeout(() => {
         setIsLoading(false);
         setFormData({ name: "", email: "", message: "" });
         showAlertMessage("success", "Message sent! I'll get it in my Gmail.");
-        // Clean up
-        form.removeAttribute('action');
-        form.removeAttribute('method');
-        form.removeAttribute('target');
-        redirectInput.remove();
-        iframe.remove();
-      }, 1000);
-      
-      return;
+      }, 1500);
+      return; // Don't prevent default - let form submit naturally
     }
+
+    // For AJAX submissions, prevent default
+    e.preventDefault();
+    setIsLoading(true);
 
     if (isFormspreeConfigured()) {
       try {
@@ -200,8 +172,31 @@ const Contact = () => {
         refresh
       />
       {showAlert && <Alert type={alertType} text={alertMessage} />}
+      {/* Hidden iframe for FormSubmit submission */}
+      {isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() && (
+        <iframe name="formsubmit_iframe" style={{ display: 'none' }} title="FormSubmit" />
+      )}
       <div className="flex flex-col items-center justify-center w-full max-w-lg sm:max-w-xl p-5 sm:p-6 mx-auto border border-white/10 rounded-xl bg-primary shadow-lg">
-        <form className="w-full space-y-5" onSubmit={handleSubmit}>
+        <form 
+          className="w-full space-y-5" 
+          onSubmit={handleSubmit}
+          action={isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() 
+            ? `https://formsubmit.co/${profile.formsubmitHash}` 
+            : undefined}
+          method={isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() 
+            ? "POST" 
+            : undefined}
+          target={isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() 
+            ? "formsubmit_iframe" 
+            : undefined}
+        >
+          {isFormSubmitConfigured() && !isFormspreeConfigured() && !isEmailJSConfigured() && (
+            <>
+              <input type="hidden" name="_next" value={window.location.href} />
+              <input type="hidden" name="_captcha" value="false" />
+              <input type="hidden" name="_subject" value="Contact Form Submission" />
+            </>
+          )}
           <div>
             <label htmlFor="name" className="field-label block text-neutral-300 font-medium mb-1.5 text-sm">
               Full Name
